@@ -5,6 +5,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.github.sambarker.logsquelcher.fixture.BeforeAllLoggingFixture;
+import io.github.sambarker.logsquelcher.fixture.ConcurrentAssertingFixture;
 import io.github.sambarker.logsquelcher.fixture.ConcurrentFailingFixture;
 import io.github.sambarker.logsquelcher.fixture.LoggingFixture;
 import org.junit.jupiter.api.AfterEach;
@@ -90,6 +91,29 @@ class LogSquelcherIntegrationTest {
 
         assertThat(appender.list)
                 .noneMatch(e -> e.getFormattedMessage().contains(ConcurrentFailingFixture.SUPPRESSED_MESSAGE));
+    }
+
+    @Test
+    void capturedLogsInjectionFailsInConcurrentModeWithoutOptIn() {
+        EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(ConcurrentAssertingFixture.class))
+                .execute()
+                .testEvents()
+                .assertStatistics(stats -> stats.started(1).failed(1));
+    }
+
+    @Test
+    void capturedLogsInjectionSucceedsInConcurrentModeWithOptIn() {
+        LogSquelcherConfig.ENABLE_ASSERTIONS_ON_INTERLEAVED_LOGS = true;
+        try {
+            EngineTestKit.engine("junit-jupiter")
+                    .selectors(selectClass(ConcurrentAssertingFixture.class))
+                    .execute()
+                    .testEvents()
+                    .assertStatistics(stats -> stats.started(1).succeeded(1));
+        } finally {
+            LogSquelcherConfig.ENABLE_ASSERTIONS_ON_INTERLEAVED_LOGS = false;
+        }
     }
 
     @Test

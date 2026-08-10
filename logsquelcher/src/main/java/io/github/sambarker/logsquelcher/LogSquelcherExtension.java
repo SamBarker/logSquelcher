@@ -2,6 +2,7 @@ package io.github.sambarker.logsquelcher;
 
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
@@ -68,8 +69,16 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
     }
 
     @Override
-    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext) {
-        return store(extensionContext).get(CAPTURED_LOGS_KEY, CapturedLogs.class);
+    public Object resolveParameter(ParameterContext parameterContext, ExtensionContext context) {
+        boolean concurrent = context.getParent()
+                .map(c -> c.getExecutionMode() == ExecutionMode.CONCURRENT)
+                .orElse(false);
+        if (concurrent && !LogSquelcherConfig.ENABLE_ASSERTIONS_ON_INTERLEAVED_LOGS) {
+            throw new ExtensionConfigurationException(
+                    "CapturedLogs cannot isolate logs from a specific test in concurrent execution mode. " +
+                    "Ensure your assertions can. Set -Dlogsquelcher.enableAssertionsOnInterleavedLogs=true to opt in.");
+        }
+        return store(context).get(CAPTURED_LOGS_KEY, CapturedLogs.class);
     }
 
     private static void replay(LoggingEvent event) {
