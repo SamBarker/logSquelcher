@@ -5,6 +5,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import io.github.sambarker.logsquelcher.fixture.BeforeAllLoggingFixture;
+import io.github.sambarker.logsquelcher.fixture.ConcurrentFailingFixture;
 import io.github.sambarker.logsquelcher.fixture.LoggingFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,6 +78,18 @@ class LogSquelcherIntegrationTest {
 
         assertThat(appender.list)
                 .anyMatch(e -> e.getFormattedMessage().contains(BeforeAllLoggingFixture.BEFORE_ALL_MESSAGE));
+    }
+
+    @Test
+    void replayIsSuppressedInConcurrentExecutionMode() {
+        EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(ConcurrentFailingFixture.class))
+                .execute()
+                .testEvents()
+                .assertStatistics(stats -> stats.started(1).failed(1));
+
+        assertThat(appender.list)
+                .noneMatch(e -> e.getFormattedMessage().contains(ConcurrentFailingFixture.SUPPRESSED_MESSAGE));
     }
 
     @Test

@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.LoggingEvent;
 
@@ -18,10 +19,15 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
     private static final String CAPTURED_LOGS_KEY = "capturedLogs";
     private static final String CLASS_START_NANOS_KEY = "classStartNanos";
     private static final String BEFORE_ALL_SNAPSHOT_KEY = "beforeAllSnapshot";
+    private static final String EFFECTIVE_REALTIME_KEY = "effectiveRealtime";
 
     @Override
     public void beforeAll(ExtensionContext context) {
-        store(context).put(CLASS_START_NANOS_KEY, System.nanoTime());
+        ExtensionContext.Store classStore = store(context);
+        classStore.put(CLASS_START_NANOS_KEY, System.nanoTime());
+        boolean effectiveRealtime = LogSquelcherConfig.REALTIME_LOGGING
+                || context.getExecutionMode() == ExecutionMode.CONCURRENT;
+        classStore.put(EFFECTIVE_REALTIME_KEY, effectiveRealtime);
     }
 
     @Override
@@ -37,10 +43,11 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
 
     @Override
     public void testFailed(ExtensionContext context, Throwable cause) {
-        if (LogSquelcherConfig.REALTIME_LOGGING) {
+        ExtensionContext.Store classStore = store(context.getParent().orElseThrow());
+        boolean effectiveRealtime = classStore.getOrDefault(EFFECTIVE_REALTIME_KEY, Boolean.class, false);
+        if (effectiveRealtime) {
             return;
         }
-        ExtensionContext.Store classStore = store(context.getParent().orElseThrow());
 
         @SuppressWarnings("unchecked")
         List<CapturedEvent> beforeAllSnapshot = (List<CapturedEvent>) classStore.get(BEFORE_ALL_SNAPSHOT_KEY);
