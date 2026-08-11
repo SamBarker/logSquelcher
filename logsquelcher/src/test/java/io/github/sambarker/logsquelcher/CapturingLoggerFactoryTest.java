@@ -33,6 +33,22 @@ class CapturingLoggerFactoryTest {
     }
 
     @Test
+    void replaySkipsEventWhenBackendLevelDisablesIt() {
+        // Given
+        List<LoggingEvent> received = new ArrayList<>();
+        ILoggerFactory delegate = name -> new WarnOnlyStubLogger(name, received);
+        CapturingLoggerFactory factory = new CapturingLoggerFactory(delegate);
+        LoggingEvent infoEvent = new LogSquelcherLoggingEvent(Level.INFO, "com.example.Foo", "filtered", null, null,
+                System.currentTimeMillis(), "main", null);
+
+        // When
+        factory.replay(infoEvent);
+
+        // Then
+        assertTrue(received.isEmpty(), "INFO event should not be forwarded to a WARN-only backend");
+    }
+
+    @Test
     void replayIsNoOpWhenNoDelegatePresent() {
         // Given
         CapturingLoggerFactory factory = new CapturingLoggerFactory(null);
@@ -97,6 +113,37 @@ class CapturingLoggerFactoryTest {
         @Override public boolean isDebugEnabled(Marker m) { return true; }
         @Override public boolean isInfoEnabled() { return true; }
         @Override public boolean isInfoEnabled(Marker m) { return true; }
+        @Override public boolean isWarnEnabled() { return true; }
+        @Override public boolean isWarnEnabled(Marker m) { return true; }
+        @Override public boolean isErrorEnabled() { return true; }
+        @Override public boolean isErrorEnabled(Marker m) { return true; }
+    }
+
+    private static class WarnOnlyStubLogger extends AbstractLogger implements LoggingEventAware {
+        private final List<LoggingEvent> received;
+
+        WarnOnlyStubLogger(String name, List<LoggingEvent> received) {
+            this.name = name;
+            this.received = received;
+        }
+
+        @Override
+        public void log(LoggingEvent event) {
+            received.add(event);
+        }
+
+        @Override
+        protected void handleNormalizedLoggingCall(Level level, Marker marker,
+                String msg, Object[] args, Throwable t) {
+        }
+
+        @Override public String getFullyQualifiedCallerName() { return null; }
+        @Override public boolean isTraceEnabled() { return false; }
+        @Override public boolean isTraceEnabled(Marker m) { return false; }
+        @Override public boolean isDebugEnabled() { return false; }
+        @Override public boolean isDebugEnabled(Marker m) { return false; }
+        @Override public boolean isInfoEnabled() { return false; }
+        @Override public boolean isInfoEnabled(Marker m) { return false; }
         @Override public boolean isWarnEnabled() { return true; }
         @Override public boolean isWarnEnabled(Marker m) { return true; }
         @Override public boolean isErrorEnabled() { return true; }

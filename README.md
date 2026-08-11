@@ -112,6 +112,62 @@ ext.assertNotLogged(MyService.class, Level.ERROR);
 
 Throws `AssertionError` if any matching event was captured, listing the offending messages.
 
+## Realtime mode
+
+By default logsquelcher buffers all events and only replays them when a test fails. If you want
+to see logs stream immediately — for example while debugging a test interactively — enable
+realtime mode:
+
+```
+-Dlogsquelcher.realtimelogging=true
+```
+
+In realtime mode all events are forwarded to the backend as they arrive. Replay on failure is
+skipped because the events were already written. Realtime mode is automatically enabled for
+test classes annotated `@Execution(ExecutionMode.CONCURRENT)` because the time-window approach
+cannot reliably isolate one test's events from another's in that context.
+
+## IntelliJ IDEA
+
+IntelliJ's JUnit runner uses the JUnit Platform Launcher, which reads `junit-platform.properties`
+from the test classpath the same way Maven does. If you have followed the automatic registration
+steps above — adding `junit.jupiter.extensions.autodetection.enabled=true` to
+`src/test/resources/junit-platform.properties` — the extension will be loaded in IntelliJ without
+any additional configuration.
+
+If you cannot add that file (for example in a project you do not own), annotate each test class
+directly:
+
+```java
+@ExtendWith(LogSquelcherExtension.class)
+class MyTest { ... }
+```
+
+### Pinning the SLF4J provider in IntelliJ
+
+If multiple SLF4J providers are on the classpath and IntelliJ picks the wrong one, pin it via
+the default JUnit run configuration template VM options:
+
+```
+-Dslf4j.provider=io.github.sambarker.logsquelcher.LogSquelcherSLF4JProvider
+```
+
+If your project already sets this in Surefire's `systemPropertyVariables`, IntelliJ's Maven
+integration may sync it automatically — check the SLF4J startup output to confirm which provider
+was loaded before adding it manually.
+
+### Realtime mode in IntelliJ
+
+Add the VM option to the default JUnit run configuration template so that every test run picks
+it up automatically:
+
+```
+-Dlogsquelcher.realtimelogging=true
+```
+
+The resulting template can be committed under `.idea/runConfigurations/` if you want to share
+it with the team.
+
 ## Backend compatibility
 
 `logsquelcher` wraps whichever SLF4J provider it finds. Preference order:

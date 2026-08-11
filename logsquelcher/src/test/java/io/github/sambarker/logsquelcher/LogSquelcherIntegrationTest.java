@@ -4,6 +4,9 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
+import io.github.sambarker.logsquelcher.fixture.BeforeAllLoggingFixture;
+import io.github.sambarker.logsquelcher.fixture.ConcurrentAssertingFixture;
+import io.github.sambarker.logsquelcher.fixture.ConcurrentFailingFixture;
 import io.github.sambarker.logsquelcher.fixture.LoggingFixture;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +22,7 @@ import org.slf4j.helpers.MessageFormatter;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 
 class LogSquelcherIntegrationTest {
@@ -63,6 +67,53 @@ class LogSquelcherIntegrationTest {
 
         assertThat(appender.list)
                 .noneMatch(e -> e.getFormattedMessage().contains(LoggingFixture.SUPPRESSED_MESSAGE));
+    }
+
+    @Test
+    void logsFromBeforeAllAreReplayedOnFailure() {
+        EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(BeforeAllLoggingFixture.class))
+                .execute()
+                .testEvents()
+                .assertStatistics(stats -> stats.started(1).failed(1));
+
+        assertThat(appender.list)
+                .anyMatch(e -> e.getFormattedMessage().contains(BeforeAllLoggingFixture.BEFORE_ALL_MESSAGE));
+    }
+
+    @Test
+    void replayIsSuppressedInConcurrentExecutionMode() {
+        EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(ConcurrentFailingFixture.class))
+                .execute()
+                .testEvents()
+                .assertStatistics(stats -> stats.started(1).failed(1));
+
+        assertThat(appender.list)
+                .noneMatch(e -> e.getFormattedMessage().contains(ConcurrentFailingFixture.SUPPRESSED_MESSAGE));
+    }
+
+    @Test
+    void capturedLogsInjectionFailsInConcurrentModeWithoutOptIn() {
+        EngineTestKit.engine("junit-jupiter")
+                .selectors(selectClass(ConcurrentAssertingFixture.class))
+                .execute()
+                .testEvents()
+                .assertStatistics(stats -> stats.started(1).failed(1));
+    }
+
+    @Test
+    void capturedLogsInjectionSucceedsInConcurrentModeWithOptIn() {
+        LogSquelcherConfig.ENABLE_ASSERTIONS_ON_INTERLEAVED_LOGS = true;
+        try {
+            EngineTestKit.engine("junit-jupiter")
+                    .selectors(selectClass(ConcurrentAssertingFixture.class))
+                    .execute()
+                    .testEvents()
+                    .assertStatistics(stats -> stats.started(1).succeeded(1));
+        } finally {
+            LogSquelcherConfig.ENABLE_ASSERTIONS_ON_INTERLEAVED_LOGS = false;
+        }
     }
 
     @Test

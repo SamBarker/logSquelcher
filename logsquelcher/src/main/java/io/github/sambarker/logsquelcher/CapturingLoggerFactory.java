@@ -38,6 +38,9 @@ class CapturingLoggerFactory implements ILoggerFactory {
     }
 
     static void forward(Logger real, LoggingEvent event) {
+        if (!real.isEnabledForLevel(event.getLevel())) {
+            return;
+        }
         if (real instanceof LoggingEventAware lea) {
             lea.log(event);
         } else {
