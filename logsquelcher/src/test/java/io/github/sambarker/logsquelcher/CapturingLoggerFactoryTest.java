@@ -72,6 +72,30 @@ class CapturingLoggerFactoryTest {
     }
 
     @Test
+    void isEnabledDelegatesToRealLogger() {
+        List<LoggingEvent> received = new ArrayList<>();
+        ILoggerFactory delegate = name -> new WarnOnlyStubLogger(name, received);
+        CapturingLoggerFactory factory = new CapturingLoggerFactory(delegate);
+        var logger = factory.getLogger("com.example.Foo");
+
+        assertFalse(logger.isTraceEnabled());
+        assertFalse(logger.isDebugEnabled());
+        assertFalse(logger.isInfoEnabled());
+        assertTrue(logger.isWarnEnabled());
+        assertTrue(logger.isErrorEnabled());
+    }
+
+    @Test
+    void isEnabledReturnsTrueWhenNoDelegatePresent() {
+        CapturingLoggerFactory factory = new CapturingLoggerFactory(null);
+        var logger = factory.getLogger("com.example.Foo");
+
+        assertTrue(logger.isTraceEnabled());
+        assertTrue(logger.isDebugEnabled());
+        assertTrue(logger.isWarnEnabled());
+    }
+
+    @Test
     void getLoggerReturnsSeparateCapturingLoggerPerName() {
         // Given
         CapturingLoggerFactory factory = new CapturingLoggerFactory(null);

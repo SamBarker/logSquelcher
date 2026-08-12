@@ -48,14 +48,14 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
         return CapturingLogger.class.getName();
     }
 
-    @Override public boolean isTraceEnabled() { return true; }
-    @Override public boolean isTraceEnabled(Marker marker) { return true; }
-    @Override public boolean isDebugEnabled() { return true; }
-    @Override public boolean isDebugEnabled(Marker marker) { return true; }
-    @Override public boolean isInfoEnabled() { return true; }
-    @Override public boolean isInfoEnabled(Marker marker) { return true; }
-    @Override public boolean isWarnEnabled() { return true; }
-    @Override public boolean isWarnEnabled(Marker marker) { return true; }
-    @Override public boolean isErrorEnabled() { return true; }
-    @Override public boolean isErrorEnabled(Marker marker) { return true; }
+    @Override public boolean isTraceEnabled() { return delegate.map(Logger::isTraceEnabled).orElse(true); }
+    @Override public boolean isTraceEnabled(Marker marker) { return delegate.map(d -> d.isTraceEnabled(marker)).orElse(true); }
+    @Override public boolean isDebugEnabled() { return delegate.map(Logger::isDebugEnabled).orElse(true); }
+    @Override public boolean isDebugEnabled(Marker marker) { return delegate.map(d -> d.isDebugEnabled(marker)).orElse(true); }
+    @Override public boolean isInfoEnabled() { return delegate.map(Logger::isInfoEnabled).orElse(true); }
+    @Override public boolean isInfoEnabled(Marker marker) { return delegate.map(d -> d.isInfoEnabled(marker)).orElse(true); }
+    @Override public boolean isWarnEnabled() { return delegate.map(Logger::isWarnEnabled).orElse(true); }
+    @Override public boolean isWarnEnabled(Marker marker) { return delegate.map(d -> d.isWarnEnabled(marker)).orElse(true); }
+    @Override public boolean isErrorEnabled() { return delegate.map(Logger::isErrorEnabled).orElse(true); }
+    @Override public boolean isErrorEnabled(Marker marker) { return delegate.map(d -> d.isErrorEnabled(marker)).orElse(true); }
 }
