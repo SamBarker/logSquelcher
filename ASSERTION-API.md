@@ -89,6 +89,34 @@ assertThat(logs.logged(MyService.class, Level.WARN).get(0))
 assertThat(logs.logged(MyService.class, Level.WARN)).isEmpty();
 ```
 
+## Controlling log levels with `@EffectiveLogLevel`
+
+By default, `isXxxEnabled()` methods delegate to the backend logger's configured level.
+If your backend defaults to INFO, code gated by `if (log.isDebugEnabled())` won't execute.
+
+`@EffectiveLogLevel` overrides the backend's level:
+
+```java
+@Test
+@EffectiveLogLevel(Level.DEBUG)
+void testDebugLogging(CapturedLogs logs) {
+    // isDebugEnabled() returns true regardless of backend config
+    subject.doSomething();
+
+    assertThat(logs.logged(MyService.class, Level.DEBUG))
+        .isNotEmpty();
+}
+```
+
+### Lifecycle semantics
+
+- **Method-level `@EffectiveLogLevel`:** Applies to that test's entire execution —
+  `@BeforeEach`, test method, and `@AfterEach`.
+- **Class-level `@EffectiveLogLevel`:** Applies to the entire class lifecycle —
+  `@BeforeAll`, all test executions, `@AfterAll`.
+- **Method overrides class:** When both are present, the method-level annotation
+  takes precedence for that test's execution.
+
 ## Concurrent execution
 
 `CapturedLogs` injection is blocked in `@Execution(CONCURRENT)` test classes by default,
