@@ -9,11 +9,11 @@ The auto-registered `LogSquelcherExtension` (via `ServiceLoader`) resolves it:
 @Test
 void shouldLogWarningWhenPluginMissing(CapturedLogs logs) {
     myService.doSomething();
+
     LoggingEventAssert.assertThat(logs.logged(MyService.class, Level.WARN))
-        .hasSize(1)
-        .first()
-        .satisfies(e -> LoggingEventAssert.assertThat(e)
-            .hasFormattedMessage("plugin not found"));
+        .singleElement()
+        .formattedMessage()
+        .isEqualTo("plugin not found");
 }
 ```
 
@@ -43,44 +43,50 @@ extends `AbstractIterableAssert` and gives access to the full AssertJ iterable A
 ```java
 import static io.github.sambarker.logsquelcher.LoggingEventAssert.assertThat;
 
-// Single event
-assertThat(logs.logged(MyService.class, Level.WARN).get(0))
-    .hasFormattedMessage("plugin not found")
-    .containsKeyValue("filterName", "myFilterDef");
-
 // List overload — full AssertJ iterable assertions available
-assertThat(logs.logged(MyService.class, Level.WARN))
-    .hasSize(1);
+assertThat(logs.logged(MyService.class, Level.WARN)).singleElement()
+    .formattedMessage().isEqualTo("plugin not found");
 ```
 
-### Available assertions
+### String navigators
+
+Both navigators return `AbstractStringAssert<?>`, giving access to the full AssertJ
+string assertion API — `isEqualTo`, `contains`, `startsWith`, `matches`, etc.
+
+| Method | What it navigates to |
+|---|---|
+| `messageTemplate()` | Raw SLF4J message template (`{}` placeholders unresolved) |
+| `formattedMessage()` | SLF4J-formatted message with placeholders interpolated |
+
+Use `messageTemplate()` when you want to assert on a fixed phrase without caring about
+interpolated runtime values:
+
+```java
+// "caught exception: {} closing channel" — assert the fixed phrase, ignore the exception text
+assertThat(logs.logged(MyService.class, Level.WARN).get(0))
+    .messageTemplate()
+    .contains("closing channel");
+```
+
+Use `formattedMessage()` for exact or partial assertions on the fully-resolved message:
+
+```java
+assertThat(logs.logged(MyService.class, Level.WARN).get(0))
+    .formattedMessage()
+    .isEqualTo("plugin foo not found");
+```
+
+### Key-value pairs (structured logging)
 
 | Method | What it checks |
 |---|---|
-| `hasFormattedMessage(String)` | SLF4J-formatted message equals (exact match) |
 | `containsKeyValue(String key, Object value)` | Event key-value pairs contain the entry |
 | `hasKeyValues(Map<String, ?>)` | Event key-value pairs contain all entries |
 
 ### Asserting "nothing was logged"
 
-Use the `logged(...)` return value directly with AssertJ:
-
 ```java
 assertThat(logs.logged(MyService.class, Level.WARN)).isEmpty();
-```
-
-### Known gap — non-exact message matching
-
-`hasFormattedMessage` only supports exact equality. There is currently no
-`formattedMessageContains` or `formattedMessageMatches` helper. As a workaround,
-use AssertJ's `anyMatch` on the list:
-
-```java
-assertThat(logs.logged(MyService.class, Level.WARN))
-    .anyMatch(e -> {
-        String msg = MessageFormatter.arrayFormat(e.getMessage(), e.getArgumentArray(), null).getMessage();
-        return msg.contains("plugin not found");
-    });
 ```
 
 ## Concurrent execution
