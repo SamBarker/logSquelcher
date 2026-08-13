@@ -1,6 +1,8 @@
 package io.github.sambarker.logsquelcher;
 
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractStringAssert;
+import org.assertj.core.api.Assertions;
 import org.slf4j.event.KeyValuePair;
 import org.slf4j.event.Level;
 import org.slf4j.event.LoggingEvent;
@@ -37,15 +39,43 @@ public class LoggingEventAssert extends AbstractAssert<LoggingEventAssert, Loggi
     }
 
     /**
-     * Verifies that the SLF4J-formatted message (placeholders resolved) equals {@code expected}.
+     * Navigate to AssertJ string assertions on the raw SLF4J message template (placeholders not resolved).
+     *
+     * <pre>{@code
+     * LoggingEventAssert.assertThat(event)
+     *     .messageTemplate()
+     *     .contains("closing channel");
+     * }</pre>
      */
-    public LoggingEventAssert hasFormattedMessage(String expected) {
+    public AbstractStringAssert<?> messageTemplate() {
+        isNotNull();
+        return Assertions.assertThat(actual.getMessage()).as("message template");
+    }
+
+    /**
+     * Navigate to AssertJ string assertions on the SLF4J-formatted message (placeholders resolved).
+     *
+     * <pre>{@code
+     * LoggingEventAssert.assertThat(event)
+     *     .formattedMessage()
+     *     .isEqualTo("Plugin foo not found");
+     * }</pre>
+     */
+    public AbstractStringAssert<?> formattedMessage() {
         isNotNull();
         String formatted = MessageFormatter.arrayFormat(actual.getMessage(), actual.getArgumentArray(),
                 actual.getThrowable()).getMessage();
-        if (!formatted.equals(expected)) {
-            failWithMessage("Expected formatted message to be <%s> but was <%s>", expected, formatted);
-        }
+        return Assertions.assertThat(formatted).as("formatted message");
+    }
+
+    /**
+     * Verifies that the SLF4J-formatted message (placeholders resolved) equals {@code expected}.
+     *
+     * @deprecated Use {@link #formattedMessage()}{@code .isEqualTo(expected)} instead.
+     */
+    @Deprecated(since = "0.3.0", forRemoval = true)
+    public LoggingEventAssert hasFormattedMessage(String expected) {
+        formattedMessage().isEqualTo(expected);
         return this;
     }
 
