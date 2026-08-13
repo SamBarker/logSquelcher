@@ -15,6 +15,16 @@ class LoggingEventAssertTest {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingEventAssertTest.class);
 
     @Test
+    @SuppressWarnings("deprecation")
+    void hasFormattedMessageStillWorksWhileDeprecated(CapturedLogs logs) {
+        LOG.warn("plugin {} is deprecated", "myPlugin");
+
+        assertDoesNotThrow(() ->
+                assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
+                        .hasFormattedMessage("plugin myPlugin is deprecated"));
+    }
+
+    @Test
     void messageTemplateReturnsRawTemplate(CapturedLogs logs) {
         LOG.warn("caught exception: {} closing channel", "boom");
 
