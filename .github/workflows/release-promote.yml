@@ -107,6 +107,7 @@ jobs:
             -DnewVersion="${NEXT}" \
             -DprocessAllModules=true \
             -DgenerateBackupPoms=false
+          sed -i "/<artifactId>logsquelcher<\/artifactId>/{n; s/<version>[^<]*<\/version>/<version>${RELEASE}<\/version>/}" README.md
           git add -A
           git commit -m "Prepare ${NEXT} development"
           git push origin "next-dev/${NEXT}"
