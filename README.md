@@ -34,17 +34,47 @@ normal console output. On success the events are silently discarded.
 
 ## Installation
 
+### As a test dependency
+
 ```xml
 <dependency>
     <groupId>io.github.sambarker</groupId>
     <artifactId>logsquelcher</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.2</version>
     <scope>test</scope>
 </dependency>
 ```
 
 `slf4j-simple` ships as a transitive dependency and acts as a fallback backend when no other SLF4J
 backend is on the classpath. If you already have Logback or Log4j2, they are preferred automatically.
+
+### As a Surefire dependency (recommended for multi-module projects)
+
+Adding logsquelcher to Surefire's classpath rather than each module's test dependencies keeps the
+extension out of individual module POMs. Only modules that use the assertion API (`ext.logged(...)`,
+`ext.assertNotLogged(...)`) need a direct `<scope>test</scope>` dependency.
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-surefire-plugin</artifactId>
+    <dependencies>
+        <dependency>
+            <groupId>io.github.sambarker</groupId>
+            <artifactId>logsquelcher</artifactId>
+            <version>0.2.2</version>
+        </dependency>
+    </dependencies>
+    <configuration>
+        <systemPropertyVariables>
+            <slf4j.provider>io.github.sambarker.logsquelcher.LogSquelcherSLF4JProvider</slf4j.provider>
+        </systemPropertyVariables>
+    </configuration>
+</plugin>
+```
+
+Pinning the SLF4J provider via `systemPropertyVariables` ensures logsquelcher wins when multiple
+providers are on the classpath.
 
 ## Registration
 
