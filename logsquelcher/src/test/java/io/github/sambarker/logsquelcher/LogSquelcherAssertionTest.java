@@ -22,7 +22,8 @@ class LogSquelcherAssertionTest {
         LOG.warn("expected message");
 
         LoggingEventAssert.assertThat(logs.logged(LogSquelcherAssertionTest.class, Level.WARN).get(0))
-                .hasFormattedMessage("expected message");
+                .formattedMessage()
+                .isEqualTo("expected message");
     }
 
     @Test
@@ -30,7 +31,8 @@ class LogSquelcherAssertionTest {
         LOG.warn("hello {}", "world");
 
         LoggingEventAssert.assertThat(logs.logged(LogSquelcherAssertionTest.class, Level.WARN).get(0))
-                .hasFormattedMessage("hello world");
+                .formattedMessage()
+                .isEqualTo("hello world");
     }
 
     @Test
@@ -57,15 +59,16 @@ class LogSquelcherAssertionTest {
         LOG.debug("debug message");
 
         LoggingEventAssert.assertThat(logs.logged(LogSquelcherAssertionTest.class).get(0))
-                .hasFormattedMessage("debug message");
+                .formattedMessage()
+                .isEqualTo("debug message");
     }
 
     @Test
     void loggedExposeKeyValuePairsFromFluentApi(CapturedLogs logs) {
         LOG.atWarn().addKeyValue("filterName", "myFilterDef").log("Plugin is deprecated");
 
-        LoggingEventAssert.assertThat(logs.logged(LogSquelcherAssertionTest.class, Level.WARN).get(0))
-                .hasFormattedMessage("Plugin is deprecated")
-                .containsKeyValue("filterName", "myFilterDef");
+        var event = LoggingEventAssert.assertThat(logs.logged(LogSquelcherAssertionTest.class, Level.WARN).get(0));
+        event.formattedMessage().isEqualTo("Plugin is deprecated");
+        event.containsKeyValue("filterName", "myFilterDef");
     }
 }

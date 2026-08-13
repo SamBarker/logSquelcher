@@ -14,10 +14,10 @@ import java.util.List;
  * @Test
  * void myTest(CapturedLogs logs) {
  *     myService.doSomething();
- *     assertThat(logs.logged(MyService.class, Level.WARN))
- *         .hasSize(1);
- *     LoggingEventAssert.assertThat(logs.logged(MyService.class, Level.WARN).get(0))
- *         .hasFormattedMessage("something went wrong");
+ *     LoggingEventAssert.assertThat(logs.logged(MyService.class, Level.WARN))
+ *         .singleElement()
+ *         .formattedMessage()
+ *         .isEqualTo("something went wrong");
  * }
  * }</pre>
  */

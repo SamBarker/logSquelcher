@@ -15,7 +15,8 @@ class LoggingEventAssertTest {
     private static final Logger LOG = LoggerFactory.getLogger(LoggingEventAssertTest.class);
 
     @Test
-    void hasFormattedMessagePassesWhenMessageMatches(CapturedLogs logs) {
+    @SuppressWarnings("deprecation")
+    void hasFormattedMessageStillWorksWhileDeprecated(CapturedLogs logs) {
         LOG.warn("plugin {} is deprecated", "myPlugin");
 
         assertDoesNotThrow(() ->
@@ -24,12 +25,55 @@ class LoggingEventAssertTest {
     }
 
     @Test
-    void hasFormattedMessageFailsWhenMessageDoesNotMatch(CapturedLogs logs) {
+    void messageTemplateReturnsRawTemplate(CapturedLogs logs) {
+        LOG.warn("caught exception: {} closing channel", "boom");
+
+        assertDoesNotThrow(() ->
+                assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
+                        .messageTemplate()
+                        .contains("closing channel")
+                        .contains("{}"));
+    }
+
+    @Test
+    void messageTemplateFailsWhenTemplateDoesNotMatch(CapturedLogs logs) {
+        LOG.warn("caught exception: {} closing channel", "boom");
+
+        assertThrows(AssertionError.class, () ->
+                assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
+                        .messageTemplate()
+                        .contains("boom"));
+    }
+
+    @Test
+    void formattedMessagePassesWhenMessageMatches(CapturedLogs logs) {
+        LOG.warn("plugin {} is deprecated", "myPlugin");
+
+        assertDoesNotThrow(() ->
+                assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
+                        .formattedMessage()
+                        .isEqualTo("plugin myPlugin is deprecated"));
+    }
+
+    @Test
+    void formattedMessageFailsWhenMessageDoesNotMatch(CapturedLogs logs) {
         LOG.warn("actual message");
 
         assertThrows(AssertionError.class, () ->
                 assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
-                        .hasFormattedMessage("different message"));
+                        .formattedMessage()
+                        .isEqualTo("different message"));
+    }
+
+    @Test
+    void formattedMessageInterpolatesPlaceholders(CapturedLogs logs) {
+        LOG.warn("caught exception: {} closing channel", "boom");
+
+        assertDoesNotThrow(() ->
+                assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
+                        .formattedMessage()
+                        .contains("boom")
+                        .doesNotContain("{}"));
     }
 
     @Test
@@ -63,10 +107,11 @@ class LoggingEventAssertTest {
     void assertionsAreChainable(CapturedLogs logs) {
         LOG.atWarn().addKeyValue("k", "v").log("hello {}", "world");
 
-        assertDoesNotThrow(() ->
-                assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0))
-                        .hasFormattedMessage("hello world")
-                        .containsKeyValue("k", "v"));
+        var event = assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN).get(0));
+        assertDoesNotThrow(() -> {
+            event.formattedMessage().isEqualTo("hello world");
+            event.containsKeyValue("k", "v");
+        });
     }
 
     @Test
@@ -129,6 +174,7 @@ class LoggingEventAssertTest {
 
         assertThat(logs.logged(LoggingEventAssertTest.class, Level.WARN))
                 .singleElement()
-                .hasFormattedMessage("only event");
+                .formattedMessage()
+                .isEqualTo("only event");
     }
 }

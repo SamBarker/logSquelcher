@@ -103,44 +103,49 @@ replayed automatically on failure.
 
 ### Asserting log output in tests
 
-Inject the extension as a parameter to query captured events:
+Inject `CapturedLogs` as a test-method parameter to query captured events:
 
 ```java
 @Test
-void warningIsLoggedWhenPluginIsDeprecated(LogSquelcherExtension ext) {
-    // exercise the code under test
+void warningIsLoggedWhenPluginIsDeprecated(CapturedLogs logs) {
     subject.doSomething();
 
-    assertThat(ext.logged(MyService.class, Level.WARN))
-            .hasFormattedMessage("Plugin is deprecated");
+    LoggingEventAssert.assertThat(logs.logged(MyService.class, Level.WARN))
+            .singleElement()
+            .formattedMessage()
+            .isEqualTo("Plugin is deprecated");
 }
 ```
 
-`ext.logged(Class, Level)` returns the first matching `LoggingEvent` or throws `AssertionError`
-listing everything that was captured if none matched.
+`logs.logged(Class, Level)` returns a `List<LoggingEvent>` — use AssertJ's iterable
+assertions to check size, then navigate into individual events with `LoggingEventAssert`.
 
-Use `ext.logged(Class)` to match any level:
+Use `logs.logged(Class)` to match any level.
+
+### Partial-match on message template
+
+To assert that a specific fixed phrase was logged without caring about interpolated values,
+navigate to the raw SLF4J template:
 
 ```java
-assertThat(ext.logged(MyService.class))
-        .hasFormattedMessage("Plugin is deprecated");
+LoggingEventAssert.assertThat(logs.logged(MyService.class, Level.WARN).get(0))
+        .messageTemplate()
+        .contains("closing channel");
 ```
 
 ### Key-value pairs (structured logging)
 
 ```java
-assertThat(ext.logged(MyService.class, Level.WARN))
-        .hasFormattedMessage("Plugin is deprecated")
-        .containsKeyValue("filterName", "myFilterDef");
+var event = LoggingEventAssert.assertThat(logs.logged(MyService.class, Level.WARN).get(0));
+event.formattedMessage().isEqualTo("Plugin is deprecated");
+event.containsKeyValue("filterName", "myFilterDef");
 ```
 
 ### Negative assertion
 
 ```java
-ext.assertNotLogged(MyService.class, Level.ERROR);
+assertThat(logs.logged(MyService.class, Level.ERROR)).isEmpty();
 ```
-
-Throws `AssertionError` if any matching event was captured, listing the offending messages.
 
 ## Realtime mode
 
