@@ -3,14 +3,15 @@ package io.github.sambarker.logsquelcher;
 import org.slf4j.event.Level;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declares the effective log level for a test method or class.
+ * Declares the effective log level for a specific logger in a test method or class.
  * <p>
- * When present, {@code isXxxEnabled()} methods on SLF4J loggers will respect this level
+ * When present, {@code isXxxEnabled()} methods on the specified logger will respect this level
  * instead of delegating to the backend logger's configured level. This allows tests to
  * capture logs at levels that would otherwise be filtered out by the backend.
  * <p>
@@ -30,9 +31,9 @@ import java.lang.annotation.Target;
  * Example:
  * <pre>
  * &#64;Test
- * &#64;EffectiveLogLevel(Level.DEBUG)
+ * &#64;EffectiveLogLevel(logger = MyService.class, level = Level.DEBUG)
  * void testDebugLogging(CapturedLogs logs) {
- *     // isDebugEnabled() returns true regardless of backend config
+ *     // MyService's isDebugEnabled() returns true regardless of backend config
  *     subject.doSomething();
  *
  *     assertThat(logs.logged(MyService.class, Level.DEBUG))
@@ -40,10 +41,27 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  * <p>
- * Method-level annotations take precedence over class-level annotations.
+ * The annotation is repeatable to set different levels for multiple loggers:
+ * <pre>
+ * &#64;EffectiveLogLevel(logger = Foo.class, level = Level.DEBUG)
+ * &#64;EffectiveLogLevel(logger = Bar.class, level = Level.TRACE)
+ * &#64;Test
+ * void testMultipleLoggers(CapturedLogs logs) { ... }
+ * </pre>
+ * <p>
+ * Method-level annotations take precedence over class-level annotations for the same logger.
  */
+@Repeatable(EffectiveLevels.class)
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EffectiveLogLevel {
-    Level value();
+    /**
+     * The logger class to configure. Required.
+     */
+    Class<?> logger();
+
+    /**
+     * The effective level for this logger. Required.
+     */
+    Level level();
 }

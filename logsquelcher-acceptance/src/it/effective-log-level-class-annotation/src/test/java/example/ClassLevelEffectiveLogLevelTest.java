@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-@EffectiveLogLevel(Level.DEBUG)
+@EffectiveLogLevel(logger = ClassLevelEffectiveLogLevelTest.class, level = Level.DEBUG)
 public class ClassLevelEffectiveLogLevelTest {
 
     static final String BEFORE_EACH_DEBUG = "debug from beforeEach with class-level annotation";

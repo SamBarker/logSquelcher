@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-@EffectiveLogLevel(Level.INFO)
+@EffectiveLogLevel(logger = MethodOverridesClassLevelTest.class, level = Level.INFO)
 public class MethodOverridesClassLevelTest {
 
     static final String BEFORE_EACH_DEBUG_BLOCKED = "debug from beforeEach - should not appear";
@@ -27,7 +27,7 @@ public class MethodOverridesClassLevelTest {
     }
 
     @Test
-    @EffectiveLogLevel(Level.DEBUG)
+    @EffectiveLogLevel(logger = MethodOverridesClassLevelTest.class, level = Level.DEBUG)
     void methodLevelDebugOverridesClassLevelInfo() {
         // Method-level DEBUG should override class-level INFO
         // This means isDebugEnabled() returns true, and @BeforeEach ran at DEBUG too

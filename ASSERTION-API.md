@@ -94,18 +94,27 @@ assertThat(logs.logged(MyService.class, Level.WARN)).isEmpty();
 By default, `isXxxEnabled()` methods delegate to the backend logger's configured level.
 If your backend defaults to INFO, code gated by `if (log.isDebugEnabled())` won't execute.
 
-`@EffectiveLogLevel` overrides the backend's level:
+`@EffectiveLogLevel` overrides the backend's level for a specific logger:
 
 ```java
 @Test
-@EffectiveLogLevel(Level.DEBUG)
+@EffectiveLogLevel(logger = MyService.class, level = Level.DEBUG)
 void testDebugLogging(CapturedLogs logs) {
-    // isDebugEnabled() returns true regardless of backend config
+    // MyService's isDebugEnabled() returns true regardless of backend config
     subject.doSomething();
 
     assertThat(logs.logged(MyService.class, Level.DEBUG))
         .isNotEmpty();
 }
+```
+
+The annotation is repeatable to configure multiple loggers:
+
+```java
+@EffectiveLogLevel(logger = Foo.class, level = Level.DEBUG)
+@EffectiveLogLevel(logger = Bar.class, level = Level.TRACE)
+@Test
+void testMultipleLoggers(CapturedLogs logs) { ... }
 ```
 
 ### Lifecycle semantics
@@ -114,8 +123,7 @@ void testDebugLogging(CapturedLogs logs) {
   `@BeforeEach`, test method, and `@AfterEach`.
 - **Class-level `@EffectiveLogLevel`:** Applies to the entire class lifecycle —
   `@BeforeAll`, all test executions, `@AfterAll`.
-- **Method overrides class:** When both are present, the method-level annotation
-  takes precedence for that test's execution.
+- **Method overrides class:** Method-level takes precedence over class-level for that specific logger.
 
 ## Concurrent execution
 

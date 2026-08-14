@@ -14,7 +14,7 @@ public class MethodLevelEffectiveLogLevelTest {
     private static final Logger LOG = LoggerFactory.getLogger(MethodLevelEffectiveLogLevelTest.class);
 
     @Test
-    @EffectiveLogLevel(Level.DEBUG)
+    @EffectiveLogLevel(logger = MethodLevelEffectiveLogLevelTest.class, level = Level.DEBUG)
     void failsAfterLoggingDebug() {
         // With @EffectiveLogLevel(DEBUG), isDebugEnabled() should return true
         // even though the backend (logback with no config) defaults to a higher level

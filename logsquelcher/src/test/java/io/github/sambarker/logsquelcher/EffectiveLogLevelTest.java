@@ -39,7 +39,7 @@ class EffectiveLogLevelTest {
     }
 
     @Test
-    @EffectiveLogLevel(Level.DEBUG)
+    @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.DEBUG)
     void methodLevelAnnotationEnablesDebugLogging(CapturedLogs logs) {
         // With @EffectiveLogLevel(DEBUG), isDebugEnabled() should return true
         assertTrue(LOG.isDebugEnabled());
@@ -53,7 +53,7 @@ class EffectiveLogLevelTest {
     }
 
     @Test
-    @EffectiveLogLevel(Level.WARN)
+    @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.WARN)
     void methodLevelAnnotationDisablesDebugWhenSetToWarn(CapturedLogs logs) {
         // With @EffectiveLogLevel(WARN), isDebugEnabled() should return false
         assertFalse(LOG.isDebugEnabled());
@@ -73,7 +73,7 @@ class EffectiveLogLevelTest {
     }
 
     @Test
-    @EffectiveLogLevel(Level.TRACE)
+    @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.TRACE)
     void methodLevelAnnotationEnablesTraceLogging(CapturedLogs logs) {
         assertTrue(LOG.isTraceEnabled());
         assertTrue(LOG.isDebugEnabled());
@@ -88,7 +88,7 @@ class EffectiveLogLevelTest {
     }
 
     @Nested
-    @EffectiveLogLevel(Level.DEBUG)
+    @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.DEBUG)
     class ClassLevelAnnotation {
 
         @Test
@@ -104,7 +104,7 @@ class EffectiveLogLevelTest {
         }
 
         @Test
-        @EffectiveLogLevel(Level.WARN)
+        @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.WARN)
         void methodLevelOverridesClassLevel(CapturedLogs logs) {
             // Method-level @EffectiveLogLevel(WARN) should override class-level DEBUG
             assertFalse(LOG.isDebugEnabled());
@@ -123,7 +123,7 @@ class EffectiveLogLevelTest {
         }
 
         @Test
-        @EffectiveLogLevel(Level.TRACE)
+        @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.TRACE)
         void methodLevelCanLowerTheLevel(CapturedLogs logs) {
             // Method-level TRACE should override class-level DEBUG
             assertTrue(LOG.isTraceEnabled());
@@ -144,7 +144,7 @@ class EffectiveLogLevelTest {
     }
 
     @Nested
-    @EffectiveLogLevel(Level.INFO)
+    @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.INFO)
     class BeforeEachLifecycle {
 
         private boolean debugEnabledDuringBeforeEach;
@@ -168,7 +168,7 @@ class EffectiveLogLevelTest {
         }
 
         @Test
-        @EffectiveLogLevel(Level.DEBUG)
+        @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.DEBUG)
         void methodLevelActiveInBeforeEach(CapturedLogs logs) {
             // Method-level DEBUG applies to @BeforeEach + test + @AfterEach
             assertTrue(debugEnabledDuringBeforeEach);
