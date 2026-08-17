@@ -139,7 +139,7 @@ public class LogSquelcherExtension implements BeforeAllCallback, AfterAllCallbac
                 .orElse(new EffectiveLogLevel[0]);
 
         for (EffectiveLogLevel annotation : annotations) {
-            Logger logger = LoggerFactory.getLogger(annotation.logger());
+            Logger logger = resolveLogger(annotation);
             if (logger instanceof CapturingLogger capturing) {
                 capturing.setEffectiveLevel(annotation.level());
                 modified.add(capturing);
@@ -147,6 +147,25 @@ public class LogSquelcherExtension implements BeforeAllCallback, AfterAllCallbac
         }
 
         return modified;
+    }
+
+    private static Logger resolveLogger(EffectiveLogLevel annotation) {
+        boolean hasClass = annotation.logger() != void.class;
+        boolean hasName = !annotation.loggerName().isEmpty();
+
+        if (hasClass && hasName) {
+            throw new ExtensionConfigurationException(
+                    "@EffectiveLogLevel cannot specify both logger and loggerName");
+        }
+
+        if (hasClass) {
+            return LoggerFactory.getLogger(annotation.logger());
+        } else if (hasName) {
+            return LoggerFactory.getLogger(annotation.loggerName());
+        } else {
+            // Neither specified - set level on ROOT logger (affects all loggers by default)
+            return LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        }
     }
 
     private static void clearModifiedLoggers(ExtensionContext.Store contextStore) {

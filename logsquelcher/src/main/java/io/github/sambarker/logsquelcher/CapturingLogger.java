@@ -63,16 +63,30 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isTraceEnabled() {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.TRACE.toInt() >= effective.toInt();
         }
         return delegate.map(Logger::isTraceEnabled).orElse(true);
     }
 
+    private Level resolveEffectiveLevel() {
+        if (effectiveLevel != null) {
+            return effectiveLevel;
+        }
+        // Check if ROOT logger has an effective level set
+        if (!org.slf4j.Logger.ROOT_LOGGER_NAME.equals(name)) {
+            Logger rootLogger = org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+            if (rootLogger instanceof CapturingLogger root && root.effectiveLevel != null) {
+                return root.effectiveLevel;
+            }
+        }
+        return null;
+    }
+
     @Override
     public boolean isTraceEnabled(Marker marker) {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.TRACE.toInt() >= effective.toInt();
         }
@@ -81,7 +95,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isDebugEnabled() {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.DEBUG.toInt() >= effective.toInt();
         }
@@ -90,7 +104,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isDebugEnabled(Marker marker) {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.DEBUG.toInt() >= effective.toInt();
         }
@@ -99,7 +113,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isInfoEnabled() {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.INFO.toInt() >= effective.toInt();
         }
@@ -108,7 +122,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isInfoEnabled(Marker marker) {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.INFO.toInt() >= effective.toInt();
         }
@@ -117,7 +131,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isWarnEnabled() {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.WARN.toInt() >= effective.toInt();
         }
@@ -126,7 +140,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isWarnEnabled(Marker marker) {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.WARN.toInt() >= effective.toInt();
         }
@@ -135,7 +149,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isErrorEnabled() {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.ERROR.toInt() >= effective.toInt();
         }
@@ -144,7 +158,7 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isErrorEnabled(Marker marker) {
-        Level effective = effectiveLevel;
+        Level effective = resolveEffectiveLevel();
         if (effective != null) {
             return Level.ERROR.toInt() >= effective.toInt();
         }

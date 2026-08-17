@@ -167,6 +167,13 @@ void testDebugLogging(CapturedLogs logs) {
 }
 ```
 
+Use `loggerName` for third-party loggers or omit both to enable globally:
+
+```java
+@EffectiveLogLevel(loggerName = "org.apache.kafka.clients", level = Level.DEBUG)
+@EffectiveLogLevel(level = Level.TRACE)  // Global: sets ROOT logger
+```
+
 The annotation is repeatable to configure multiple loggers:
 
 ```java

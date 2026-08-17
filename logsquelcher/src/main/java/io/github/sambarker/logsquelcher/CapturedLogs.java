@@ -52,6 +52,24 @@ public class CapturedLogs implements ExtensionContext.Store.CloseableResource, A
     }
 
     /**
+     * Returns all log events from the logger named {@code loggerName} at {@code level} captured since this test started.
+     * Returns an empty list if none were captured.
+     *
+     * <p>The window covers all threads — not just the JUnit test thread.
+     *
+     * @param loggerName the logger name whose events to inspect
+     * @param level      the required log level
+     * @return all matching events, in capture order; never null
+     */
+    public List<LoggingEvent> logged(String loggerName, Level level) {
+        return EventBuffer.extractWindow(startNanos, System.nanoTime()).stream()
+                .map(CapturedEvent::loggingEvent)
+                .filter(e -> loggerName.equals(e.getLoggerName()))
+                .filter(e -> level == e.getLevel())
+                .toList();
+    }
+
+    /**
      * Returns all log events from {@code logger} at any level captured since this test started.
      * Returns an empty list if none were captured.
      *

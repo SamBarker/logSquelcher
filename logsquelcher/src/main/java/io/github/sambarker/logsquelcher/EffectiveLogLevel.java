@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
  *         takes precedence for that test's execution.</li>
  * </ul>
  * <p>
- * Example:
+ * Example using logger class:
  * <pre>
  * &#64;Test
  * &#64;EffectiveLogLevel(logger = MyService.class, level = Level.DEBUG)
@@ -41,10 +41,26 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  * <p>
+ * Example using logger name (useful for third-party loggers):
+ * <pre>
+ * &#64;Test
+ * &#64;EffectiveLogLevel(loggerName = "org.apache.kafka.clients", level = Level.DEBUG)
+ * void testKafkaClientLogging(CapturedLogs logs) { ... }
+ * </pre>
+ * <p>
+ * Example setting level globally (affects all loggers via ROOT logger):
+ * <pre>
+ * &#64;Test
+ * &#64;EffectiveLogLevel(level = Level.DEBUG)
+ * void testWithGlobalDebug(CapturedLogs logs) {
+ *     // All loggers have DEBUG enabled, regardless of backend config
+ * }
+ * </pre>
+ * <p>
  * The annotation is repeatable to set different levels for multiple loggers:
  * <pre>
  * &#64;EffectiveLogLevel(logger = Foo.class, level = Level.DEBUG)
- * &#64;EffectiveLogLevel(logger = Bar.class, level = Level.TRACE)
+ * &#64;EffectiveLogLevel(loggerName = "com.example.third.party", level = Level.TRACE)
  * &#64;Test
  * void testMultipleLoggers(CapturedLogs logs) { ... }
  * </pre>
@@ -56,9 +72,20 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface EffectiveLogLevel {
     /**
-     * The logger class to configure. Required.
+     * The logger class to configure. Mutually exclusive with {@link #loggerName()}.
+     * <p>
+     * If neither {@code logger} nor {@code loggerName} is specified, the level is set on the
+     * ROOT logger, which typically affects all loggers in the system.
      */
-    Class<?> logger();
+    Class<?> logger() default void.class;
+
+    /**
+     * The logger name to configure. Mutually exclusive with {@link #logger()}.
+     * <p>
+     * If neither {@code logger} nor {@code loggerName} is specified, the level is set on the
+     * ROOT logger, which typically affects all loggers in the system.
+     */
+    String loggerName() default "";
 
     /**
      * The effective level for this logger. Required.

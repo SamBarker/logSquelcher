@@ -5,12 +5,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import static io.github.sambarker.logsquelcher.LoggingEventAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(LogSquelcherExtension.class)
@@ -141,6 +143,42 @@ class EffectiveLogLevelTest {
                     .formattedMessage()
                     .isEqualTo("debug message");
         }
+    }
+
+    @Test
+    @EffectiveLogLevel(loggerName = "io.github.sambarker.logsquelcher.EffectiveLogLevelTest", level = Level.DEBUG)
+    void methodLevelAnnotationWithLoggerNameEnablesDebugLogging(CapturedLogs logs) {
+        // With @EffectiveLogLevel(loggerName=..., DEBUG), isDebugEnabled() should return true
+        assertTrue(LOG.isDebugEnabled());
+
+        LOG.debug("debug message using loggerName");
+
+        assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
+                .singleElement()
+                .formattedMessage()
+                .isEqualTo("debug message using loggerName");
+    }
+
+    @Test
+    @EffectiveLogLevel(level = Level.DEBUG)
+    void globalEffectiveLevelAppliestoAllLoggers(CapturedLogs logs) {
+        // With @EffectiveLogLevel(DEBUG) and no logger specified, all loggers should have DEBUG enabled
+        Logger otherLogger = LoggerFactory.getLogger("some.other.logger");
+
+        assertTrue(LOG.isDebugEnabled());
+        assertTrue(otherLogger.isDebugEnabled());
+
+        LOG.debug("debug from test logger");
+        otherLogger.debug("debug from other logger");
+
+        assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
+                .singleElement()
+                .formattedMessage()
+                .isEqualTo("debug from test logger");
+        assertThat(logs.logged("some.other.logger", Level.DEBUG))
+                .singleElement()
+                .formattedMessage()
+                .isEqualTo("debug from other logger");
     }
 
     @Nested
