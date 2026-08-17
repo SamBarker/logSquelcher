@@ -11,9 +11,8 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import static io.github.sambarker.logsquelcher.LoggingEventAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(LogSquelcherExtension.class)
 class EffectiveLogLevelTest {
@@ -44,7 +43,7 @@ class EffectiveLogLevelTest {
     @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.DEBUG)
     void methodLevelAnnotationEnablesDebugLogging(CapturedLogs logs) {
         // With @EffectiveLogLevel(DEBUG), isDebugEnabled() should return true
-        assertTrue(LOG.isDebugEnabled());
+        assertThat(LOG.isDebugEnabled()).isTrue();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("debug message");
@@ -60,9 +59,9 @@ class EffectiveLogLevelTest {
     @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.WARN)
     void methodLevelAnnotationDisablesDebugWhenSetToWarn(CapturedLogs logs) {
         // With @EffectiveLogLevel(WARN), isDebugEnabled() should return false
-        assertFalse(LOG.isDebugEnabled());
-        assertFalse(LOG.isInfoEnabled());
-        assertTrue(LOG.isWarnEnabled());
+        assertThat(LOG.isDebugEnabled()).isFalse();
+        assertThat(LOG.isInfoEnabled()).isFalse();
+        assertThat(LOG.isWarnEnabled()).isTrue();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("should not be logged");
@@ -79,9 +78,9 @@ class EffectiveLogLevelTest {
     @Test
     @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.TRACE)
     void methodLevelAnnotationEnablesTraceLogging(CapturedLogs logs) {
-        assertTrue(LOG.isTraceEnabled());
-        assertTrue(LOG.isDebugEnabled());
-        assertTrue(LOG.isInfoEnabled());
+        assertThat(LOG.isTraceEnabled()).isTrue();
+        assertThat(LOG.isDebugEnabled()).isTrue();
+        assertThat(LOG.isInfoEnabled()).isTrue();
 
         if (LOG.isTraceEnabled()) {
             LOG.trace("trace message");
@@ -99,7 +98,7 @@ class EffectiveLogLevelTest {
 
         @Test
         void classLevelAnnotationAppliestoAllTests(CapturedLogs logs) {
-            assertTrue(LOG.isDebugEnabled());
+            assertThat(LOG.isDebugEnabled()).isTrue();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("debug from class-level annotation");
@@ -115,8 +114,8 @@ class EffectiveLogLevelTest {
         @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.WARN)
         void methodLevelOverridesClassLevel(CapturedLogs logs) {
             // Method-level @EffectiveLogLevel(WARN) should override class-level DEBUG
-            assertFalse(LOG.isDebugEnabled());
-            assertTrue(LOG.isWarnEnabled());
+            assertThat(LOG.isDebugEnabled()).isFalse();
+            assertThat(LOG.isWarnEnabled()).isTrue();
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("should not appear");
@@ -134,8 +133,8 @@ class EffectiveLogLevelTest {
         @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.TRACE)
         void methodLevelCanLowerTheLevel(CapturedLogs logs) {
             // Method-level TRACE should override class-level DEBUG
-            assertTrue(LOG.isTraceEnabled());
-            assertTrue(LOG.isDebugEnabled());
+            assertThat(LOG.isTraceEnabled()).isTrue();
+            assertThat(LOG.isDebugEnabled()).isTrue();
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("trace message");
@@ -159,7 +158,7 @@ class EffectiveLogLevelTest {
     @EffectiveLogLevel(loggerName = "io.github.sambarker.logsquelcher.EffectiveLogLevelTest", level = Level.DEBUG)
     void methodLevelAnnotationWithLoggerNameEnablesDebugLogging(CapturedLogs logs) {
         // With @EffectiveLogLevel(loggerName=..., DEBUG), isDebugEnabled() should return true
-        assertTrue(LOG.isDebugEnabled());
+        assertThat(LOG.isDebugEnabled()).isTrue();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("debug message using loggerName");
@@ -177,8 +176,8 @@ class EffectiveLogLevelTest {
         // With @EffectiveLogLevel(DEBUG) and no logger specified, all loggers should have DEBUG enabled
         Logger otherLogger = LoggerFactory.getLogger("some.other.logger");
 
-        assertTrue(LOG.isDebugEnabled());
-        assertTrue(otherLogger.isDebugEnabled());
+        assertThat(LOG.isDebugEnabled()).isTrue();
+        assertThat(otherLogger.isDebugEnabled()).isTrue();
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("debug from test logger");
@@ -215,7 +214,7 @@ class EffectiveLogLevelTest {
         @Test
         void classLevelAnnotationActiveInBeforeEach(CapturedLogs logs) {
             // DEBUG should NOT be enabled since class is set to INFO
-            assertFalse(debugEnabledDuringBeforeEach);
+            assertThat(debugEnabledDuringBeforeEach).isFalse();
 
             // The info log from @BeforeEach should be captured
             assertThat(logs.logged(EffectiveLogLevelTest.class, Level.INFO))
@@ -227,10 +226,10 @@ class EffectiveLogLevelTest {
         @EffectiveLogLevel(logger = EffectiveLogLevelTest.class, level = Level.DEBUG)
         void methodLevelActiveInBeforeEach(CapturedLogs logs) {
             // Method-level DEBUG applies to @BeforeEach + test + @AfterEach
-            assertTrue(debugEnabledDuringBeforeEach);
+            assertThat(debugEnabledDuringBeforeEach).isTrue();
 
             // And during the test method itself, DEBUG should still be active
-            assertTrue(LOG.isDebugEnabled());
+            assertThat(LOG.isDebugEnabled()).isTrue();
             if (LOG.isDebugEnabled()) {
                 LOG.debug("from test method");
             }
