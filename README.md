@@ -190,6 +190,15 @@ void testMultipleLoggers(CapturedLogs logs) { ... }
 
 Without the annotation, `isXxxEnabled()` delegates to the backend logger's configured level, as in version 0.2.1.
 
+**Replay limitation:** `@EffectiveLogLevel` only controls what gets *captured*. Replay-on-failure
+forwards each event through the real backend, which re-applies its own configured level. If you use
+`@EffectiveLogLevel` to lower the effective level below what the backend allows (e.g. `DEBUG` over a
+backend pinned to `INFO`), the debug log is captured and assertable via `CapturedLogs`, but it will
+**not** appear in the console output on failure — the backend filters it out on the way through. This
+only affects console replay; `CapturedLogs` assertions are unaffected either way. Raising the
+effective level (e.g. `WARN` over an `INFO` backend) doesn't have this problem, since anything that
+survives the higher bar also clears the backend's lower one.
+
 ## Realtime mode
 
 By default logsquelcher buffers all events and only replays them when a test fails. If you want

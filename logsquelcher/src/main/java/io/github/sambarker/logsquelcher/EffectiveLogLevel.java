@@ -71,6 +71,14 @@ import java.lang.annotation.Target;
  * This annotation is meta-annotated with {@link ExtendWith @ExtendWith(LogSquelcherExtension.class)},
  * so applying it registers the extension automatically — no explicit {@code @ExtendWith} or
  * extension autodetection is required.
+ * <p>
+ * <strong>Replay limitation:</strong> this annotation only controls what gets captured. Replay-on-failure
+ * forwards each captured event through the real backend logger, which re-applies its own configured
+ * level. Lowering the effective level below what the backend allows (e.g. {@code DEBUG} over a backend
+ * pinned to {@code INFO}) makes the log capturable and assertable via {@link CapturedLogs}, but it will
+ * not appear in the console output on failure — the backend filters it out on the way through. Raising
+ * the effective level (e.g. {@code WARN} over an {@code INFO} backend) does not have this problem: anything
+ * that survives the higher bar also clears the backend's lower one.
  */
 @Repeatable(EffectiveLevels.class)
 @Target({ElementType.METHOD, ElementType.TYPE})
