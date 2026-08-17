@@ -1,5 +1,6 @@
 package io.github.sambarker.logsquelcher;
 
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.event.Level;
 
 import java.lang.annotation.ElementType;
@@ -66,10 +67,15 @@ import java.lang.annotation.Target;
  * </pre>
  * <p>
  * Method-level annotations take precedence over class-level annotations for the same logger.
+ * <p>
+ * This annotation is meta-annotated with {@link ExtendWith @ExtendWith(LogSquelcherExtension.class)},
+ * so applying it registers the extension automatically — no explicit {@code @ExtendWith} or
+ * extension autodetection is required.
  */
 @Repeatable(EffectiveLevels.class)
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@ExtendWith(LogSquelcherExtension.class)
 public @interface EffectiveLogLevel {
     /**
      * The logger class to configure. Mutually exclusive with {@link #loggerName()}.
