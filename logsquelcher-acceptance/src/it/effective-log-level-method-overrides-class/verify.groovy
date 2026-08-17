@@ -1,13 +1,8 @@
 def buildLog = new File(basedir, 'build.log').text
 
-assert buildLog.contains('debug from beforeEach - should not appear') :
-    "Expected DEBUG from @BeforeEach when method has @EffectiveLogLevel(DEBUG) overriding class INFO.\n" +
-    "Build log:\n${buildLog}"
-
-assert buildLog.contains('info from beforeEach - should appear') :
-    "Expected INFO message from @BeforeEach but did not find it.\n" +
-    "Build log:\n${buildLog}"
-
-assert buildLog.contains('debug from test with method override - should appear') :
-    "Expected DEBUG message from test method when method has @EffectiveLogLevel(DEBUG) but did not find it.\n" +
-    "Build log:\n${buildLog}"
+// The tests assert directly on CapturedLogs, so a clean run means method-level
+// @EffectiveLogLevel overrode the class-level one (present) and, without an override,
+// the class INFO level suppressed DEBUG (absent).
+assert buildLog.contains('Tests run: 2, Failures: 0, Errors: 0, Skipped: 0') :
+    "Expected both tests to pass, proving method-level @EffectiveLogLevel overrides class-level " +
+    "and that CapturedLogs reflects the effective level.\nBuild log:\n${buildLog}"
