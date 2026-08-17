@@ -46,7 +46,9 @@ class EffectiveLogLevelTest {
         // With @EffectiveLogLevel(DEBUG), isDebugEnabled() should return true
         assertTrue(LOG.isDebugEnabled());
 
-        LOG.debug("debug message");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("debug message");
+        }
 
         assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
                 .singleElement()
@@ -81,7 +83,9 @@ class EffectiveLogLevelTest {
         assertTrue(LOG.isDebugEnabled());
         assertTrue(LOG.isInfoEnabled());
 
-        LOG.trace("trace message");
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("trace message");
+        }
 
         assertThat(logs.logged(EffectiveLogLevelTest.class, Level.TRACE))
                 .singleElement()
@@ -97,7 +101,9 @@ class EffectiveLogLevelTest {
         void classLevelAnnotationAppliestoAllTests(CapturedLogs logs) {
             assertTrue(LOG.isDebugEnabled());
 
-            LOG.debug("debug from class-level annotation");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("debug from class-level annotation");
+            }
 
             assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
                     .singleElement()
@@ -131,8 +137,12 @@ class EffectiveLogLevelTest {
             assertTrue(LOG.isTraceEnabled());
             assertTrue(LOG.isDebugEnabled());
 
-            LOG.trace("trace message");
-            LOG.debug("debug message");
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("trace message");
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("debug message");
+            }
 
             assertThat(logs.logged(EffectiveLogLevelTest.class, Level.TRACE))
                     .singleElement()
@@ -151,7 +161,9 @@ class EffectiveLogLevelTest {
         // With @EffectiveLogLevel(loggerName=..., DEBUG), isDebugEnabled() should return true
         assertTrue(LOG.isDebugEnabled());
 
-        LOG.debug("debug message using loggerName");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("debug message using loggerName");
+        }
 
         assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
                 .singleElement()
@@ -168,8 +180,12 @@ class EffectiveLogLevelTest {
         assertTrue(LOG.isDebugEnabled());
         assertTrue(otherLogger.isDebugEnabled());
 
-        LOG.debug("debug from test logger");
-        otherLogger.debug("debug from other logger");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("debug from test logger");
+        }
+        if (otherLogger.isDebugEnabled()) {
+            otherLogger.debug("debug from other logger");
+        }
 
         assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
                 .singleElement()
@@ -191,7 +207,9 @@ class EffectiveLogLevelTest {
         void setup() {
             // Class-level annotation should be active during @BeforeEach
             debugEnabledDuringBeforeEach = LOG.isDebugEnabled();
-            LOG.info("from beforeEach");
+            if (LOG.isInfoEnabled()) {
+                LOG.info("from beforeEach");
+            }
         }
 
         @Test
@@ -213,7 +231,9 @@ class EffectiveLogLevelTest {
 
             // And during the test method itself, DEBUG should still be active
             assertTrue(LOG.isDebugEnabled());
-            LOG.debug("from test method");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("from test method");
+            }
 
             assertThat(logs.logged(EffectiveLogLevelTest.class, Level.DEBUG))
                     .singleElement()
