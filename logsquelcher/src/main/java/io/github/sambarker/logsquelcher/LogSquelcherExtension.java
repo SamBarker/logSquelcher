@@ -1,5 +1,7 @@
 package io.github.sambarker.logsquelcher;
 
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionConfigurationException;
@@ -8,12 +10,15 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.TestWatcher;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.LoggingEvent;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallback, TestWatcher, ParameterResolver {
+public class LogSquelcherExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback,
+        AfterEachCallback, TestWatcher, ParameterResolver {
 
     private static final ExtensionContext.Namespace NAMESPACE =
             ExtensionContext.Namespace.create(LogSquelcherExtension.class);
@@ -21,6 +26,7 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
     private static final String CLASS_START_NANOS_KEY = "classStartNanos";
     private static final String BEFORE_ALL_SNAPSHOT_KEY = "beforeAllSnapshot";
     private static final String EFFECTIVE_REALTIME_KEY = "effectiveRealtime";
+    private static final String MODIFIED_LOGGERS_KEY = "modifiedLoggers";
 
     @Override
     public void beforeAll(ExtensionContext context) {
@@ -29,6 +35,18 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
         boolean effectiveRealtime = LogSquelcherConfig.REALTIME_LOGGING
                 || context.getExecutionMode() == ExecutionMode.CONCURRENT;
         classStore.put(EFFECTIVE_REALTIME_KEY, effectiveRealtime);
+
+        // Class-level @EffectiveLogLevel applies to everything in this class
+        List<CapturingLogger> modified = applyEffectiveLevels(context);
+        if (!modified.isEmpty()) {
+            classStore.put(MODIFIED_LOGGERS_KEY, modified);
+        }
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        // Clear class-level effective log levels
+        clearModifiedLoggers(store(context));
     }
 
     @Override
@@ -40,6 +58,27 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
             classStore.put(BEFORE_ALL_SNAPSHOT_KEY, EventBuffer.extractWindow(classStartNanos, testStartNanos));
         }
         store(context).put(CAPTURED_LOGS_KEY, new CapturedLogs(testStartNanos));
+
+        // Method-level @EffectiveLogLevel overrides class-level for this test
+        List<CapturingLogger> modified = applyEffectiveLevels(context);
+        if (!modified.isEmpty()) {
+            store(context).put(MODIFIED_LOGGERS_KEY, modified);
+        }
+    }
+
+    @Override
+    public void afterEach(ExtensionContext context) {
+        // Clear method-level effective log levels and restore class-level if present
+        clearModifiedLoggers(store(context));
+
+        // Restore class-level settings if they exist
+        ExtensionContext.Store classStore = store(context.getParent().orElseThrow());
+        @SuppressWarnings("unchecked")
+        List<CapturingLogger> classLoggers = (List<CapturingLogger>) classStore.get(MODIFIED_LOGGERS_KEY);
+        if (classLoggers != null) {
+            // Re-apply class-level annotations that were overridden
+            applyEffectiveLevels(context.getParent().orElseThrow());
+        }
     }
 
     @Override
@@ -89,5 +128,51 @@ public class LogSquelcherExtension implements BeforeAllCallback, BeforeEachCallb
 
     private static ExtensionContext.Store store(ExtensionContext context) {
         return context.getStore(NAMESPACE);
+    }
+
+    private static List<CapturingLogger> applyEffectiveLevels(ExtensionContext context) {
+        List<CapturingLogger> modified = new ArrayList<>();
+
+        // Find all @EffectiveLogLevel annotations (handles both single and @EffectiveLevels container)
+        EffectiveLogLevel[] annotations = context.getElement()
+                .map(element -> element.getAnnotationsByType(EffectiveLogLevel.class))
+                .orElse(new EffectiveLogLevel[0]);
+
+        for (EffectiveLogLevel annotation : annotations) {
+            Logger logger = resolveLogger(annotation);
+            if (logger instanceof CapturingLogger capturing) {
+                capturing.setEffectiveLevel(annotation.level());
+                modified.add(capturing);
+            }
+        }
+
+        return modified;
+    }
+
+    private static Logger resolveLogger(EffectiveLogLevel annotation) {
+        boolean hasClass = annotation.logger() != void.class;
+        boolean hasName = !annotation.loggerName().isEmpty();
+
+        if (hasClass && hasName) {
+            throw new ExtensionConfigurationException(
+                    "@EffectiveLogLevel cannot specify both logger and loggerName");
+        }
+
+        if (hasClass) {
+            return LoggerFactory.getLogger(annotation.logger());
+        } else if (hasName) {
+            return LoggerFactory.getLogger(annotation.loggerName());
+        } else {
+            // Neither specified - set level on ROOT logger (affects all loggers by default)
+            return LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+        }
+    }
+
+    private static void clearModifiedLoggers(ExtensionContext.Store contextStore) {
+        @SuppressWarnings("unchecked")
+        List<CapturingLogger> modified = (List<CapturingLogger>) contextStore.get(MODIFIED_LOGGERS_KEY);
+        if (modified != null) {
+            modified.forEach(CapturingLogger::clearEffectiveLevel);
+        }
     }
 }
