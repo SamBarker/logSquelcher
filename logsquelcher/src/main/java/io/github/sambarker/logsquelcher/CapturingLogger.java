@@ -8,6 +8,7 @@ import org.slf4j.helpers.AbstractLogger;
 import org.slf4j.spi.LoggingEventAware;
 
 import java.util.Optional;
+import java.util.function.Predicate;
 
 class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
@@ -63,11 +64,15 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isTraceEnabled() {
+        return isLevelEnabled(Level.TRACE, Logger::isTraceEnabled);
+    }
+
+    private boolean isLevelEnabled(Level level, Predicate<Logger> delegateCheck) {
         Level effective = resolveEffectiveLevel();
         if (effective != null) {
-            return Level.TRACE.toInt() >= effective.toInt();
+            return level.toInt() >= effective.toInt();
         }
-        return delegate.map(Logger::isTraceEnabled).orElse(true);
+        return delegate.map(delegateCheck::test).orElse(true);
     }
 
     private Level resolveEffectiveLevel() {
@@ -86,82 +91,46 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     @Override
     public boolean isTraceEnabled(Marker marker) {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.TRACE.toInt() >= effective.toInt();
-        }
-        return delegate.map(d -> d.isTraceEnabled(marker)).orElse(true);
+        return isLevelEnabled(Level.TRACE, l -> l.isTraceEnabled(marker));
     }
 
     @Override
     public boolean isDebugEnabled() {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.DEBUG.toInt() >= effective.toInt();
-        }
-        return delegate.map(Logger::isDebugEnabled).orElse(true);
+        return isLevelEnabled(Level.DEBUG, Logger::isDebugEnabled);
     }
 
     @Override
     public boolean isDebugEnabled(Marker marker) {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.DEBUG.toInt() >= effective.toInt();
-        }
-        return delegate.map(d -> d.isDebugEnabled(marker)).orElse(true);
+        return isLevelEnabled(Level.DEBUG, l -> l.isDebugEnabled(marker));
     }
 
     @Override
     public boolean isInfoEnabled() {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.INFO.toInt() >= effective.toInt();
-        }
-        return delegate.map(Logger::isInfoEnabled).orElse(true);
+        return isLevelEnabled(Level.INFO, Logger::isInfoEnabled);
     }
 
     @Override
     public boolean isInfoEnabled(Marker marker) {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.INFO.toInt() >= effective.toInt();
-        }
-        return delegate.map(d -> d.isInfoEnabled(marker)).orElse(true);
+        return isLevelEnabled(Level.INFO, l -> l.isInfoEnabled(marker));
     }
 
     @Override
     public boolean isWarnEnabled() {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.WARN.toInt() >= effective.toInt();
-        }
-        return delegate.map(Logger::isWarnEnabled).orElse(true);
+        return isLevelEnabled(Level.WARN, Logger::isWarnEnabled);
     }
 
     @Override
     public boolean isWarnEnabled(Marker marker) {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.WARN.toInt() >= effective.toInt();
-        }
-        return delegate.map(d -> d.isWarnEnabled(marker)).orElse(true);
+        return isLevelEnabled(Level.WARN, l -> l.isWarnEnabled(marker));
     }
 
     @Override
     public boolean isErrorEnabled() {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.ERROR.toInt() >= effective.toInt();
-        }
-        return delegate.map(Logger::isErrorEnabled).orElse(true);
+        return isLevelEnabled(Level.ERROR, Logger::isErrorEnabled);
     }
 
     @Override
     public boolean isErrorEnabled(Marker marker) {
-        Level effective = resolveEffectiveLevel();
-        if (effective != null) {
-            return Level.ERROR.toInt() >= effective.toInt();
-        }
-        return delegate.map(d -> d.isErrorEnabled(marker)).orElse(true);
+        return isLevelEnabled(Level.ERROR, l -> l.isErrorEnabled(marker));
     }
 }
