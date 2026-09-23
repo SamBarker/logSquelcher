@@ -50,7 +50,7 @@
         <maven-artifact-plugin.version>3.6.1</maven-artifact-plugin.version>
 
         <junit.version>5.14.4</junit.version>
-        <slf4j.version>2.0.18</slf4j.version>
+        <slf4j.version>2.0.20</slf4j.version>
         <logback.version>1.6.3</logback.version>
         <assertj-core.version>3.27.7</assertj-core.version>
     </properties>
