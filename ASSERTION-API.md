@@ -89,6 +89,60 @@ assertThat(logs.logged(MyService.class, Level.WARN).get(0))
 assertThat(logs.logged(MyService.class, Level.WARN)).isEmpty();
 ```
 
+## Controlling log levels with `@EffectiveLogLevel`
+
+By default, `isXxxEnabled()` methods delegate to the backend logger's configured level.
+If your backend defaults to INFO, code gated by `if (log.isDebugEnabled())` won't execute.
+
+`@EffectiveLogLevel` overrides the backend's level for a specific logger:
+
+```java
+@Test
+@EffectiveLogLevel(logger = MyService.class, level = Level.DEBUG)
+void testDebugLogging(CapturedLogs logs) {
+    // MyService's isDebugEnabled() returns true regardless of backend config
+    subject.doSomething();
+
+    assertThat(logs.logged(MyService.class, Level.DEBUG))
+        .isNotEmpty();
+}
+```
+
+For third-party loggers where you don't have the class reference, use `loggerName`:
+
+```java
+@Test
+@EffectiveLogLevel(loggerName = "org.apache.kafka.clients", level = Level.DEBUG)
+void testKafkaClientLogging(CapturedLogs logs) { ... }
+```
+
+To enable a level globally (all loggers), omit both `logger` and `loggerName`:
+
+```java
+@Test
+@EffectiveLogLevel(level = Level.DEBUG)
+void testWithGlobalDebug(CapturedLogs logs) {
+    // All loggers have DEBUG enabled via ROOT logger
+}
+```
+
+The annotation is repeatable to configure multiple loggers:
+
+```java
+@EffectiveLogLevel(logger = Foo.class, level = Level.DEBUG)
+@EffectiveLogLevel(loggerName = "com.example.third.party", level = Level.TRACE)
+@Test
+void testMultipleLoggers(CapturedLogs logs) { ... }
+```
+
+### Lifecycle semantics
+
+- **Method-level `@EffectiveLogLevel`:** Applies to that test's entire execution —
+  `@BeforeEach`, test method, and `@AfterEach`.
+- **Class-level `@EffectiveLogLevel`:** Applies to the entire class lifecycle —
+  `@BeforeAll`, all test executions, `@AfterAll`.
+- **Method overrides class:** Method-level takes precedence over class-level for that specific logger.
+
 ## Concurrent execution
 
 `CapturedLogs` injection is blocked in `@Execution(CONCURRENT)` test classes by default,

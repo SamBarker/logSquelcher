@@ -8,14 +8,28 @@ import org.slf4j.helpers.AbstractLogger;
 import org.slf4j.spi.LoggingEventAware;
 
 import java.util.Optional;
+import java.util.function.Predicate;
 
 class CapturingLogger extends AbstractLogger implements LoggingEventAware {
 
     private final Optional<Logger> delegate;
+    private volatile Level effectiveLevel;
 
     CapturingLogger(String name, Logger realLogger) {
         this.name = name;
         this.delegate = Optional.ofNullable(realLogger);
+    }
+
+    void setEffectiveLevel(Level level) {
+        this.effectiveLevel = level;
+    }
+
+    void clearEffectiveLevel() {
+        this.effectiveLevel = null;
+    }
+
+    Level getEffectiveLevel() {
+        return this.effectiveLevel;
     }
 
     @Override
@@ -48,14 +62,75 @@ class CapturingLogger extends AbstractLogger implements LoggingEventAware {
         return CapturingLogger.class.getName();
     }
 
-    @Override public boolean isTraceEnabled() { return delegate.map(Logger::isTraceEnabled).orElse(true); }
-    @Override public boolean isTraceEnabled(Marker marker) { return delegate.map(d -> d.isTraceEnabled(marker)).orElse(true); }
-    @Override public boolean isDebugEnabled() { return delegate.map(Logger::isDebugEnabled).orElse(true); }
-    @Override public boolean isDebugEnabled(Marker marker) { return delegate.map(d -> d.isDebugEnabled(marker)).orElse(true); }
-    @Override public boolean isInfoEnabled() { return delegate.map(Logger::isInfoEnabled).orElse(true); }
-    @Override public boolean isInfoEnabled(Marker marker) { return delegate.map(d -> d.isInfoEnabled(marker)).orElse(true); }
-    @Override public boolean isWarnEnabled() { return delegate.map(Logger::isWarnEnabled).orElse(true); }
-    @Override public boolean isWarnEnabled(Marker marker) { return delegate.map(d -> d.isWarnEnabled(marker)).orElse(true); }
-    @Override public boolean isErrorEnabled() { return delegate.map(Logger::isErrorEnabled).orElse(true); }
-    @Override public boolean isErrorEnabled(Marker marker) { return delegate.map(d -> d.isErrorEnabled(marker)).orElse(true); }
+    @Override
+    public boolean isTraceEnabled() {
+        return isLevelEnabled(Level.TRACE, Logger::isTraceEnabled);
+    }
+
+    private boolean isLevelEnabled(Level level, Predicate<Logger> delegateCheck) {
+        Level effective = resolveEffectiveLevel();
+        if (effective != null) {
+            return level.toInt() >= effective.toInt();
+        }
+        return delegate.map(delegateCheck::test).orElse(true);
+    }
+
+    private Level resolveEffectiveLevel() {
+        if (effectiveLevel != null) {
+            return effectiveLevel;
+        }
+        // Check if ROOT logger has an effective level set
+        if (!org.slf4j.Logger.ROOT_LOGGER_NAME.equals(name)) {
+            Logger rootLogger = org.slf4j.LoggerFactory.getLogger(org.slf4j.Logger.ROOT_LOGGER_NAME);
+            if (rootLogger instanceof CapturingLogger root && root.effectiveLevel != null) {
+                return root.effectiveLevel;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean isTraceEnabled(Marker marker) {
+        return isLevelEnabled(Level.TRACE, l -> l.isTraceEnabled(marker));
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+        return isLevelEnabled(Level.DEBUG, Logger::isDebugEnabled);
+    }
+
+    @Override
+    public boolean isDebugEnabled(Marker marker) {
+        return isLevelEnabled(Level.DEBUG, l -> l.isDebugEnabled(marker));
+    }
+
+    @Override
+    public boolean isInfoEnabled() {
+        return isLevelEnabled(Level.INFO, Logger::isInfoEnabled);
+    }
+
+    @Override
+    public boolean isInfoEnabled(Marker marker) {
+        return isLevelEnabled(Level.INFO, l -> l.isInfoEnabled(marker));
+    }
+
+    @Override
+    public boolean isWarnEnabled() {
+        return isLevelEnabled(Level.WARN, Logger::isWarnEnabled);
+    }
+
+    @Override
+    public boolean isWarnEnabled(Marker marker) {
+        return isLevelEnabled(Level.WARN, l -> l.isWarnEnabled(marker));
+    }
+
+    @Override
+    public boolean isErrorEnabled() {
+        return isLevelEnabled(Level.ERROR, Logger::isErrorEnabled);
+    }
+
+    @Override
+    public boolean isErrorEnabled(Marker marker) {
+        return isLevelEnabled(Level.ERROR, l -> l.isErrorEnabled(marker));
+    }
 }

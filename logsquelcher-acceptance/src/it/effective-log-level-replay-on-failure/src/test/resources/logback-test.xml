@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Pins the backend root logger to INFO. This does two jobs for this IT: the replayed WARN
+  (WARN >= INFO) passes the backend's own filter on the way out, and absent @EffectiveLogLevel
+  the guarded info would be logged and replayed too — so the info's absence proves the
+  annotation raised the effective level to WARN.
+-->
+<configuration>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger -- %msg%n</pattern>
+        </encoder>
+    </appender>
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+</configuration>

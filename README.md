@@ -147,6 +147,58 @@ event.containsKeyValue("filterName", "myFilterDef");
 assertThat(logs.logged(MyService.class, Level.ERROR)).isEmpty();
 ```
 
+### Controlling log levels in tests
+
+By default, `isXxxEnabled()` methods delegate to the backend logger's configured level. This means
+tests will only capture logs at levels the backend has enabled. If your backend defaults to INFO,
+code gated by `if (log.isDebugEnabled())` won't execute during tests.
+
+Use `@EffectiveLogLevel` to override the backend's level for a specific logger:
+
+```java
+@Test
+@EffectiveLogLevel(logger = MyService.class, level = Level.DEBUG)
+void testDebugLogging(CapturedLogs logs) {
+    // MyService's isDebugEnabled() returns true regardless of backend config
+    subject.doSomething();
+
+    assertThat(logs.logged(MyService.class, Level.DEBUG))
+        .isNotEmpty();
+}
+```
+
+Use `loggerName` for third-party loggers or omit both to enable globally:
+
+```java
+@EffectiveLogLevel(loggerName = "org.apache.kafka.clients", level = Level.DEBUG)
+@EffectiveLogLevel(level = Level.TRACE)  // Global: sets ROOT logger
+```
+
+The annotation is repeatable to configure multiple loggers:
+
+```java
+@EffectiveLogLevel(logger = Foo.class, level = Level.DEBUG)
+@EffectiveLogLevel(logger = Bar.class, level = Level.TRACE)
+@Test
+void testMultipleLoggers(CapturedLogs logs) { ... }
+```
+
+**Lifecycle semantics:**
+- **Method-level:** Applies to that test's entire execution — `@BeforeEach`, test method, and `@AfterEach`
+- **Class-level:** Applies to everything — `@BeforeAll`, all test executions, `@AfterAll`
+- **Method overrides class:** Method-level takes precedence over class-level for that specific logger
+
+Without the annotation, `isXxxEnabled()` delegates to the backend logger's configured level, as in version 0.2.1.
+
+**Replay limitation:** `@EffectiveLogLevel` only controls what gets *captured*. Replay-on-failure
+forwards each event through the real backend, which re-applies its own configured level. If you use
+`@EffectiveLogLevel` to lower the effective level below what the backend allows (e.g. `DEBUG` over a
+backend pinned to `INFO`), the debug log is captured and assertable via `CapturedLogs`, but it will
+**not** appear in the console output on failure — the backend filters it out on the way through. This
+only affects console replay; `CapturedLogs` assertions are unaffected either way. Raising the
+effective level (e.g. `WARN` over an `INFO` backend) doesn't have this problem, since anything that
+survives the higher bar also clears the backend's lower one.
+
 ## Realtime mode
 
 By default logsquelcher buffers all events and only replays them when a test fails. If you want
